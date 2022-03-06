@@ -23,6 +23,7 @@ end
 
 include("utils.jl")
 include("time_delay_matrix.jl")
+include("save_results.jl")
 
 
 function build_parcels(count, Λ, initial)
@@ -88,6 +89,22 @@ function traffic_prob(traffic)
     traffic
 end
 
+function try_build_csr(cn, Λ, T, s₀, pn)
+    for _ ∈ 1:10000
+        csrs = build_csr(cn, Λ₂, T)
+        if count(==(s₀), csrs[:, 2]) >= pn
+            return csrs
+        end
+    end
+end
+
+function build_instance(Λ₁, Λ₂, T, pn, cn, s₀)
+    parcels = build_parcels(pn, Λ₁, s₀)
+    csrs = try_build_csr(cn, Λ₂, T, s₀, pn)
+    @assert csrs !== nothing
+    (parcels, csrs)
+end
+
 traffic_anchors = [
     7 0 5
     7 15 5
@@ -103,12 +120,6 @@ config = load_config("config.yml")
 
 apl_stations = [4, 12, 20, 28, 29, 40, 42, 43, 44]
 
-
-csr_count = 500
-parcel_count = 50
-start_station = 5
-
-# Load
 clients = load_clients(config.population_file, config.population_entry; scale = 15)
 stations =
     load_map(config.network_file, config.network_orig_scale, config.network_new_scale)[
@@ -122,43 +133,19 @@ time_delay = build_time_delay_matrix(
     apl_stations,
 )
 
-# Parcels
 D = make_distance_matrix(clients, stations)
-Λ = compute_lambda(D, clients; col = 5)
-normalize!(Λ, 1)
-parcels = build_parcels(parcel_count, Λ, start_station)
 
+Λ₁ = compute_lambda(D, clients; col = 5)
+normalize!(Λ₁, 1)
 
-# Crowd-shippers
-Λ = compute_lambda(D, clients; col = 4)
-normalize!(Λ, 1)
+Λ₂ = compute_lambda(D, clients; col = 4)
+normalize!(Λ₂, 1)
+
 T = traffic_prob(traffic_anchors)
-csrs = for i = 1:10000
 
-    csrs = build_csr(csr_count, Λ, T)
-    if count(==(start_station), csrs[:, 2]) >= parcel_count
-        return csrs
-    end
-end
+csr_count = 500
+parcel_count = 50
+start_station = 5
 
-@assert csrs !== nothing
-
-
-h5open(config.output_file, "cw") do file
-
-    count = if haskey(file, "count")
-        tmp = read(file["count"])
-        count = tmp + 1
-        write(file["count"], count)
-        count
-    else
-        file["count"] = 1
-    end
-    println(count)
-
-    instance = create_group(file, "instance-$count")
-    instance["parcels"] = parcels
-    instance["csrs"] = csrs
-    instance["delay"] = time_delay
-    instance["wait"] = 2ones(length(apl_stations))
-end
+parcels, csrs = build_instance(Λ₁, Λ₂, T, parcel_count, csr_count, start_station)
+save_results(config.output_file, parcels, csrs, time_delay, length(apl_stations))
