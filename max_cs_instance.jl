@@ -6,6 +6,7 @@ using YAML
 using Configurations
 
 @option struct Config
+    output_file::String
     network_file::String
     population_file::String
     population_entry::String
@@ -143,7 +144,7 @@ end
 @assert csrs !== nothing
 
 
-h5open("cs-instances.hdf5", "cw") do file
+h5open(config.output_file, "cw") do file
 
     count = if haskey(file, "count")
         tmp = read(file["count"])
