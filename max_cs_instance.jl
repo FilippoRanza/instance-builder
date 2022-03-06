@@ -96,7 +96,7 @@ time_delay = build_time_delay_matrix("example-network.json", (-2500, 2500), (0, 
 D = make_distance_matrix(clients, stations)
 Λ = compute_lambda(D, clients; col=5)
 normalize!(Λ, 1)
-parcels = build_parcels(parcel_count, Λ)
+parcels = build_parcels(parcel_count, Λ, 5)
 
 
 # Crowd-shippers
