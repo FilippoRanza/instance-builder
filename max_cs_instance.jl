@@ -147,5 +147,24 @@ csr_count = 500
 parcel_count = 50
 start_station = 5
 
-parcels, csrs = build_instance(Λ₁, Λ₂, T, parcel_count, csr_count, start_station)
-save_results(config.output_file, parcels, csrs, time_delay, length(apl_stations))
+instances_param = [
+    (100, 10),
+    (100, 20),
+    (200, 50),
+    (300, 50),
+    (300, 75),
+    (400, 75),
+    (500, 100),
+    (500, 200),
+    (600, 200),
+    (600, 250),
+    (700, 250)
+]
+instance_count = 3
+
+for (c, p) in instances_param
+    for _ in 1:instance_count
+        parcels, csrs = build_instance(Λ₁, Λ₂, T, parcel_count, csr_count, start_station)
+        save_results(config.output_file, parcels, csrs, time_delay, length(apl_stations))
+    end
+end
