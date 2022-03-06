@@ -90,7 +90,7 @@ function traffic_prob(traffic)
 end
 
 function try_build_csr(cn, Λ, T, s₀, pn)
-    for _ ∈ 1:10000
+    for _ ∈ 1:20000
         csrs = build_csr(cn, Λ₂, T)
         if count(==(s₀), csrs[:, 2]) >= pn
             return csrs
@@ -101,7 +101,7 @@ end
 function build_instance(Λ₁, Λ₂, T, pn, cn, s₀)
     parcels = build_parcels(pn, Λ₁, s₀)
     csrs = try_build_csr(cn, Λ₂, T, s₀, pn)
-    @assert csrs !== nothing
+    @assert csrs !== nothing "$pn - $cn"
     (parcels, csrs)
 end
 
@@ -143,28 +143,22 @@ normalize!(Λ₂, 1)
 
 T = traffic_prob(traffic_anchors)
 
-csr_count = 500
-parcel_count = 50
+
 start_station = 5
 
 instances_param = [
     (100, 10),
     (100, 20),
-    (200, 50),
     (300, 50),
-    (300, 75),
     (400, 75),
-    (500, 100),
-    (500, 200),
-    (600, 200),
-    (600, 250),
-    (700, 250)
+    (600, 100),
+    (700, 125)
 ]
-instance_count = 3
+instance_count = 5
 
 for (c, p) in instances_param
     for _ in 1:instance_count
-        parcels, csrs = build_instance(Λ₁, Λ₂, T, parcel_count, csr_count, start_station)
+        parcels, csrs = build_instance(Λ₁, Λ₂, T, p, c, start_station)
         save_results(config.output_file, parcels, csrs, time_delay, length(apl_stations))
     end
 end
