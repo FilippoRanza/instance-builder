@@ -26,4 +26,4 @@ Manifest.toml
 *.json
 *.hdf5
 .vscode/
-
+*.yml

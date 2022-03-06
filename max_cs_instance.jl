@@ -2,6 +2,24 @@ using Distributions
 using Interpolations
 using LinearAlgebra
 
+using YAML
+using Configurations
+
+@option struct Config
+    network_file::String
+    population_file::String
+    population_entry::String
+    network_orig_scale::Vector{Float64}
+    network_new_scale::Vector{Float64}
+end
+
+function load_config(config_file)::Config
+    conf = YAML.load_file(config_file; dicttype = Dict{String,Any})
+    from_dict(Config, conf)
+end
+
+
+
 include("utils.jl")
 include("time_delay_matrix.jl")
 
@@ -26,11 +44,11 @@ function csr_paths(count, Λ)
     curr = 1
     while curr <= count
         s, d = rand(distr, 2)
-        if s ≠ d 
+        if s ≠ d
             out[curr, 2:3] = [s, d]
             curr += 1
         end
-    end 
+    end
 
     out
 end
@@ -51,7 +69,7 @@ function hm_to_m(traffic)
     out = zeros(r, 2)
     for (i, (h, m, t)) in enumerate(eachrow(traffic))
         time = h * 60 + m
-        out[i, :] = [time, t] 
+        out[i, :] = [time, t]
     end
     start = out[1, 1]
     out[:, 1] .-= start
@@ -70,43 +88,54 @@ function traffic_prob(traffic)
 end
 
 traffic_anchors = [
-    7 0  5;
-    7 15 5;
-    7 45 10;
-    8 15 10;
-    8 45 6;
-    9 30 1;
-    10 0 1;
+    7 0 5
+    7 15 5
+    7 45 10
+    8 15 10
+    8 45 6
+    9 30 1
+    10 0 1
 ]
 
 
+config = load_config("config.yml")
 
 apl_stations = [4, 12, 20, 28, 29, 40, 42, 43, 44]
 
 
 csr_count = 500
-parcel_count = 100
+parcel_count = 50
+start_station = 5
 
 # Load
-clients = load_clients("clients.hdf5", "clients/test/22"; scale=15)
-stations = load_map("example-network.json", (-2500, 2500), (0, 250))[apl_stations, :]
-time_delay = build_time_delay_matrix("example-network.json", (-2500, 2500), (0, 250), apl_stations)
+clients = load_clients(config.population_file, config.population_entry; scale = 15)
+stations =
+    load_map(config.network_file, config.network_orig_scale, config.network_new_scale)[
+        apl_stations,
+        :,
+    ]
+time_delay = build_time_delay_matrix(
+    config.network_file,
+    config.network_orig_scale,
+    config.network_new_scale,
+    apl_stations,
+)
 
 # Parcels
 D = make_distance_matrix(clients, stations)
-Λ = compute_lambda(D, clients; col=5)
+Λ = compute_lambda(D, clients; col = 5)
 normalize!(Λ, 1)
-parcels = build_parcels(parcel_count, Λ, 5)
+parcels = build_parcels(parcel_count, Λ, start_station)
 
 
 # Crowd-shippers
-Λ = compute_lambda(D, clients; col=4)
+Λ = compute_lambda(D, clients; col = 4)
 normalize!(Λ, 1)
 T = traffic_prob(traffic_anchors)
-csrs = for i in 1:10000
+csrs = for i = 1:10000
 
     csrs = build_csr(csr_count, Λ, T)
-    if count(==(5), csrs[:, 2]) >= parcel_count
+    if count(==(start_station), csrs[:, 2]) >= parcel_count
         return csrs
     end
 end

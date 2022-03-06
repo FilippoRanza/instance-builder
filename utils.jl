@@ -4,10 +4,10 @@ using JSON
 function make_distance_matrix(clients, stations)
     c = size(clients, 1)
     s = size(stations, 1)
-    
+
     dist = zeros(s, c)
-    for i in 1:c
-        for j in 1:s
+    for i = 1:c
+        for j = 1:s
             dist[j, i] = euclid_distance(clients[i, 1:2], stations[j, :])
         end
     end
@@ -15,11 +15,11 @@ function make_distance_matrix(clients, stations)
 end
 
 
-function compute_lambda(distance, clients; col=4)
+function compute_lambda(distance, clients; col = 4)
     s = size(distance, 1)
     Λ = zeros(s)
     for i = 1:s
-        Λ[i] = mapreduce((d, p) -> exp(-d/p), +, distance[:, i], clients[:, col])
+        Λ[i] = mapreduce((d, p) -> exp(-d / p), +, distance[:, i], clients[:, col])
     end
     Λ
 end
@@ -33,7 +33,7 @@ function convert_inteval(i₁, i₂)
     A = [x₁ 1; x₂ 1]
     b = [y₁; y₂]
     a, b = A \ b
-    (x) -> a*x + b
+    (x) -> a * x + b
 end
 
 function euclid_distance(p₁, p₂)
@@ -49,9 +49,9 @@ function scale_distances!(clients, scale)
     clients
 end
 
-function load_clients(file_name, data_entry; scale=1)
+function load_clients(file_name, data_entry; scale = 1)
     h5open(file_name) do data
-        read(data[data_entry]) |> M -> scale_distances!(M, scale) 
+        read(data[data_entry]) |> M -> scale_distances!(M, scale)
     end
 end
 

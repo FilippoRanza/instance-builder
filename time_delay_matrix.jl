@@ -22,7 +22,7 @@ function min_normalize(M)
 end
 
 function remove_self_arc(M)
-    for i in 1:size(M, 1)
+    for i = 1:size(M, 1)
         M[i, i] = Inf
     end
     M
@@ -68,7 +68,7 @@ function get_distance(s₁, s₂, net::Network)
 end
 
 function get_point(s_id, net::Network)
-    net.points[s_id + 1, :]
+    net.points[s_id+1, :]
 end
 
 function load_network(file_name, I₁, I₂)
@@ -92,7 +92,3 @@ function get_points(raw_points, I₁, I₂)
     f = convert_inteval(I₁, I₂)
     f.(output)
 end
-
-
-
-
